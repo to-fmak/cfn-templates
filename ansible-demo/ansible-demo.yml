@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  MyPublicIP:
+    Type: "String"
+    Description: "end with /32"
+    Default: ""
+  VpcCidrBlock:
+    Type: "String"
+    Default: "10.0.0.0/16"
+  KeyName:
+    Type: "AWS::EC2::KeyPair::KeyName"
+  InstanceType:
+    Type: "String"
+    Default: "t2.micro"
+  AMI:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+
+Resources:
+  # Create VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: "Name"
+          Value: "ansible-demo-vpc"
+
+  # Create IGW
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: "ansible-demo-igw"
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # Create Route Tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "ansible-demo-public-rtb"
+      VpcId: !Ref VPC
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+  # Create Public Subnet
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.0.1.0/24"
+      AvailabilityZone: !Sub ${AWS::Region}a
+      Tags:
+        - Key: "Name"
+          Value: "ansible-demo-public-subnet-1a"
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  # Create SG for Ansible Master
+  MasterEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "ansible-demo-master-sg"
+      GroupDescription: "ansible-demo-master-sg"
+      VpcId: !Ref VPC
+      Tags:
+          - Key: Name
+            Value: "ansible-demo-master-sg"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyPublicIP
+          Description: "for ssh from remote"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "0.0.0.0/0"
+          Description: "for internet access"
+
+  # Create SG for Ansible Nodes
+  NodesEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: "ansible-demo-nodes-sg"
+      GroupDescription: "ansible-demo-nodes-sg"
+      VpcId: !Ref VPC
+      Tags:
+          - Key: Name
+            Value: "ansible-demo-nodes-sg"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref VpcCidrBlock
+          Description: "for ssh from vpc"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: "0.0.0.0/0"
+          Description: "for internet access"
+
+  # Create EC2
+  AnsibleMaster:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      KeyName: !Ref KeyName
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnetA
+          GroupSet:
+            - !Ref MasterEC2SG
+      Tags:
+          - Key: Name
+            Value: "ansible-demo-master"
+
+  AnsibleNode01:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      KeyName: !Ref KeyName
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnetA
+          GroupSet:
+            - !Ref NodesEC2SG
+      Tags:
+          - Key: Name
+            Value: "ansible-demo-node01"
+
+  AnsibleNode02:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      KeyName: !Ref KeyName
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnetA
+          GroupSet:
+            - !Ref NodesEC2SG
+      Tags:
+          - Key: Name
+            Value: "ansible-demo-node02"
