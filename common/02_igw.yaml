@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  IGName:
+    Type: "String"
+    Default: "MyInternetGateway"
+
+Resources:
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Ref IGName
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !ImportValue Vpc
+
+Outputs:
+  InternetGatewayID:
+    Value: !Ref InternetGateway
+    Export:
+      Name: "InternetGateway"

@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  PublicSubnet01Cidr:
+    Type: "String"
+    Default: "10.0.1.0/24"
+  PublicSubnet02Cidr:
+    Type: "String"
+    Default: "10.0.2.0/24"
+  PrivateSubnet01Cidr:
+    Type: "String"
+    Default: "10.0.3.0/24"
+  PrivateSubnet02Cidr:
+    Type: "String"
+    Default: "10.0.4.0/24"
+  PublicSubnet01Name:
+    Type: "String"
+    Default: "MyPublicSubnet01"
+  PublicSubnet02Name:
+    Type: "String"
+    Default: "MyPublicSubnet02"
+  PrivateSubnet01Name:
+    Type: "String"
+    Default: "MyPrivateSubnet01"
+  PrivateSubnet02Name:
+    Type: "String"
+    Default: "MyPrivateSubnet02"
+  AvailabilityZone01:
+    Type: "String"
+    Default: "ap-northeast-1a"
+  AvailabilityZone02:
+    Type: "String"
+    Default: "ap-northeast-1c"
+
+Resources:
+  PublicSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnet01Cidr
+      VpcId: !ImportValue Vpc
+      AvailabilityZone: !Ref AvailabilityZone01
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: "Name"
+          Value: !Ref PublicSubnet01Name
+
+  PublicSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnet02Cidr
+      VpcId: !ImportValue Vpc
+      AvailabilityZone: !Ref AvailabilityZone02
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: "Name"
+          Value: !Ref PublicSubnet02Name
+
+  PrivateSubnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnet01Cidr
+      VpcId: !ImportValue Vpc
+      AvailabilityZone: !Ref AvailabilityZone01
+      Tags:
+        - Key: "Name"
+          Value: !Ref PrivateSubnet01Name
+
+  PrivateSubnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnet02Cidr
+      VpcId: !ImportValue Vpc
+      AvailabilityZone: !Ref AvailabilityZone02
+      Tags:
+        - Key: "Name"
+          Value: !Ref PrivateSubnet02Name
+
+  PublicSubnet01RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet01
+      RouteTableId: !ImportValue PublicRtb
+
+  PublicSubnet02RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet02
+      RouteTableId: !ImportValue PublicRtb
+
+  PrivateSubnet01RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet01
+      RouteTableId: !ImportValue PrivateRtb
+
+  PrivateSubnet02RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet02
+      RouteTableId: !ImportValue PrivateRtb
+
+Outputs:
+  PublicSubnet01ID:
+    Value: !Ref PublicSubnet01
+    Export:
+      Name: "PublicSubnet01"
+  PublicSubnet02ID:
+    Value: !Ref PublicSubnet02
+    Export:
+      Name: "PublicSubnet02"
+  PrivateSubnet01ID:
+    Value: !Ref PrivateSubnet01
+    Export:
+      Name: "PrivateSubnet01"
+  PrivateSubnet02ID:
+    Value: !Ref PrivateSubnet02
+    Export:
+      Name: "PrivateSubnet02"

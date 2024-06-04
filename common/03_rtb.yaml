@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  PublicRouteTableName:
+    Type: "String"
+    Default: "PublicRouteTable"
+  PrivateRouteTableName:
+    Type: "String"
+    Default: "PrivateRouteTable"
+
+Resources:
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref PublicRouteTableName
+      VpcId: !ImportValue Vpc
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !ImportValue InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref PrivateRouteTableName
+      VpcId: !ImportValue Vpc
+
+Outputs:
+  PublicRouteTableID:
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: "PublicRtb"
+  PrivateRouteTableID:
+    Value: !Ref PrivateRouteTable
+    Export:
+      Name: "PrivateRtb"

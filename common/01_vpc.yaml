@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  VPCCidr:
+    Type: "String"
+    Default: "10.0.0.0/16"
+  VPCName:
+    Type: "String"
+    Default: "MyVPC"
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: "Name"
+          Value: !Ref VPCName
+
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: "Vpc"
